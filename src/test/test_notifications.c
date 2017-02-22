@@ -18,7 +18,7 @@ void eventNotify(const char* event, const char* key) {
 
 int main(int argc, char **argv) {
 
-    keyspaceNotifier *notifier = NewKeyspaceNotifier();
+    keyspaceNotifier *notifier = NewKeyspaceNotifier("127.0.0.1", 6379);
     
     // Register to for events.
     printf("Registering for events notification\n");

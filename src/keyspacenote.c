@@ -11,9 +11,7 @@ int evthread_use_pthreads(void);
 #define EVTHREAD_USE_PTHREADS_IMPLEMENTED
 #endif
 
-void _connectSync(keyspaceNotifier *notifier) {
-    const char *hostname = "127.0.0.1";
-    int port = 6379;
+void _connectSync(keyspaceNotifier *notifier, const char *hostname, int port) {
     struct timeval timeout = { 1, 500000 }; // 1.5 seconds
     
     // Open connection to local redis.
@@ -29,10 +27,7 @@ void _connectSync(keyspaceNotifier *notifier) {
     }
 }
 
-void _connectAsync(keyspaceNotifier *notifier) {
-    const char *hostname = "127.0.0.1";
-    int port = 6379;
-    
+void _connectAsync(keyspaceNotifier *notifier, const char *hostname, int port) {
     // Open connection to local redis.
     notifier->async = redisAsyncConnect(hostname, port);
     if (notifier->async->err) {
@@ -78,6 +73,8 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     if(r->type == REDIS_REPLY_ARRAY) {
         _handleRedisArrayReply(r, n);
     }
+
+    freeReplyObject(reply);
 }
 
 int _register(keyspaceNotifier *notifier, const char* channel, keyNotifyCallback fn) {
@@ -150,11 +147,12 @@ void disconnectCallback(const redisAsyncContext *c, int status) {
     printf("DISCONNECTED\n");
 }
 
-void notifierIssueRedisCommand(const keyspaceNotifier *notifier,const char *command) {
-    redisCommand(notifier->c, command);
+redisReply* notifierIssueRedisCommand(const keyspaceNotifier *notifier,const char *command) {
+    redisReply *reply = redisCommand(notifier->c, command);
+    return reply;
 }
 
-keyspaceNotifier* NewKeyspaceNotifier() {
+keyspaceNotifier* NewKeyspaceNotifier(const char *hostname, int port) {
     signal(SIGPIPE, SIG_IGN);
 
     // http://www.wangafu.net/~nickm/libevent-book/Ref1_libsetup.html
@@ -165,8 +163,8 @@ keyspaceNotifier* NewKeyspaceNotifier() {
     notifier->base = event_base_new();
     notifier->callbacksIdx = 0;
 
-    _connectSync(notifier);
-    _connectAsync(notifier);
+    _connectSync(notifier, hostname, port);
+    _connectAsync(notifier, hostname, port);
     _enableNotifications(notifier);
     redisAsyncSetDisconnectCallback(notifier->async, disconnectCallback);
     redisLibeventAttach(notifier->async, notifier->base);

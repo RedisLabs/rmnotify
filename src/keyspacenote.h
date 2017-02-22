@@ -24,8 +24,7 @@ typedef struct keyspaceNotifier {
     channelCallback callbacks[MAX_CALLBACKS];   /* List of registered key/event callbacks */
 } keyspaceNotifier;
 
-
-keyspaceNotifier* NewKeyspaceNotifier();
+keyspaceNotifier* NewKeyspaceNotifier(const char *hostname, int port);
 
 /* Register to receive notifications for key */
 int notifierRegisterKey(keyspaceNotifier *notifier, const char* key, keyNotifyCallback fn);
@@ -39,8 +38,11 @@ int notifierDeregisterKey(keyspaceNotifier *notifier, const char *key);
 /* Stop receiving notifications for event */
 int notifierDeregisterEvent(keyspaceNotifier *notifier, const char *event);
 
-/* Executes given command */
-void notifierIssueRedisCommand(const keyspaceNotifier *notifier, const char *command);
+/* Executes given command
+ * it is the calle responsibility
+ * to free returned redisReply using freeReplyObject.
+ */
+redisReply* notifierIssueRedisCommand(const keyspaceNotifier *notifier,const char *command);
 
 /* Releases all memory allocated by notifier, de-register from all channels*/
 void FreeKeyspaceNotifier(keyspaceNotifier *notifier);

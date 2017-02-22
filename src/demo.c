@@ -16,7 +16,7 @@ void eventNotify(const char* event, const char* key) {
 int main(int argc, char **argv) {
     char input[48];
     
-    keyspaceNotifier *notifier = NewKeyspaceNotifier();
+    keyspaceNotifier *notifier = NewKeyspaceNotifier("127.0.0.1", 6379);
     
     notifierRegisterKey(notifier, "foo", keyNotify);
     notifierRegisterKey(notifier, "bar", keyNotify);
@@ -28,6 +28,12 @@ int main(int argc, char **argv) {
     printf("Press any key to quite\n");
     scanf ("%s", input);
     printf("quiting\n");
+
+    redisReply *reply = notifierIssueRedisCommand(notifier, "GET foo");
+    printf("reply type: %d\n", reply->type);
+    printf("reply len: %lu\n", reply->len);
+    printf("reply str: %s\n", reply->str);
+    freeReplyObject(reply);
 
     FreeKeyspaceNotifier(notifier);
     return 0;
